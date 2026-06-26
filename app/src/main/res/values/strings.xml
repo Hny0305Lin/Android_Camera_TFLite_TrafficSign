@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">TrafficSign Demo</string>
+    <string name="camera_permission_required">需要相机权限才能启动实时识别</string>
+    <string name="camera_starting">正在启动相机...</string>
+    <string name="camera_running">相机已启动，正在实时识别交通标志</string>
+    <string name="camera_error">相机启动失败</string>
+    <string name="camera_resolution_waiting">正在读取最高分辨率</string>
+    <string name="camera_resolution_format">分析分辨率：%1$d x %2$d</string>
+    <string name="overlay_engine_status">定位方式：颜色候选框 + TFLite 分类</string>
+    <string name="labels_missing_hint">未找到 labels.txt，当前将显示 Class 索引</string>
+    <string name="runtime_tflite">TensorFlow Lite</string>
+</resources>
