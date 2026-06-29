@@ -267,7 +267,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         private companion object {
-            const val ANALYSIS_INTERVAL_MS = 150L
+            const val ANALYSIS_INTERVAL_MS = 33L
         }
     }
 }

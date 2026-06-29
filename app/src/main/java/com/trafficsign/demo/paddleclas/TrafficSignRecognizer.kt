@@ -82,7 +82,10 @@ class TrafficSignRecognizer(
             if (!AssetUtils.assetExists(context, config.modelAssetPath)) {
                 null
             } else {
-                Interpreter(loadMappedModel(context, config.modelAssetPath))
+                val options = org.tensorflow.lite.Interpreter.Options().apply {
+                    setNumThreads(Runtime.getRuntime().availableProcessors().coerceIn(2, 4))
+                }
+                Interpreter(loadMappedModel(context, config.modelAssetPath), options)
             }
         }
 
@@ -138,8 +141,8 @@ class TrafficSignRecognizer(
     }
 
     private companion object {
-        const val MIN_DETECTION_SCORE = 0.6f
-        const val MAX_DETECTIONS = 4
+        const val MIN_DETECTION_SCORE = 0.45f
+        const val MAX_DETECTIONS = 24
 
         private fun toDisplayLabel(rawLabel: String): String {
             return when {

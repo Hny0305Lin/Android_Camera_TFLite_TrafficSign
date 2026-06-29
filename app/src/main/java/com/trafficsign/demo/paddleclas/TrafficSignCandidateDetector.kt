@@ -200,6 +200,7 @@ class TrafficSignCandidateDetector {
             hue <= 24f || hue >= 332f -> COLOR_RED
             hue in 180f..265f -> COLOR_BLUE
             hue in 28f..82f -> COLOR_YELLOW
+            hue in 88f..165f -> COLOR_GREEN
             else -> COLOR_NONE
         }
     }
@@ -339,6 +340,16 @@ class TrafficSignCandidateDetector {
                 middleAvg > bottomAvg * 1.05f &&
                 centerRatio < 0.6f
 
+        val rectangleLike =
+            aspectRatio in 0.55f..2.0f &&
+                topAvg > boxWidth * 0.3f &&
+                bottomAvg > boxWidth * 0.3f &&
+                leftAvg > boxHeight * 0.3f &&
+                rightAvg > boxHeight * 0.3f &&
+                centerRatio in 0.1f..0.75f &&
+                kotlin.math.abs(topAvg - bottomAvg) / topAvg.coerceAtLeast(1f) < 0.35f &&
+                kotlin.math.abs(middleAvg - topAvg) / topAvg.coerceAtLeast(1f) < 0.35f
+
         return roundLikeStrong ||
             roundLikeSoft ||
             octagonLikeStrong ||
@@ -346,7 +357,8 @@ class TrafficSignCandidateDetector {
             triangleUpStrong ||
             triangleUpSoft ||
             triangleDownStrong ||
-            triangleDownSoft
+            triangleDownSoft ||
+            rectangleLike
     }
 
     private fun averageNonZero(values: IntArray, startInclusive: Int, endExclusive: Int): Float {
@@ -367,6 +379,7 @@ class TrafficSignCandidateDetector {
             COLOR_RED -> Color.parseColor("#FF3B30")
             COLOR_BLUE -> Color.parseColor("#0A84FF")
             COLOR_YELLOW -> Color.parseColor("#FFD60A")
+            COLOR_GREEN -> Color.parseColor("#34C759")
             else -> Color.WHITE
         }
     }
@@ -378,28 +391,29 @@ class TrafficSignCandidateDetector {
     )
 
     private companion object {
-        const val MAX_ANALYSIS_EDGE = 480
-        const val MAX_CANDIDATE_COUNT = 6
+        const val MAX_ANALYSIS_EDGE = 960
+        const val MAX_CANDIDATE_COUNT = 32
         const val MIN_COMPONENT_PIXELS_FLOOR = 48
         const val MIN_COMPONENT_AREA_RATIO = 0.00018f
         const val MIN_EDGE_PIXELS_FLOOR = 10
         const val MIN_EDGE_RATIO = 0.024f
-        const val MIN_FILL_RATIO = 0.35f
-        const val MIN_ASPECT_RATIO = 0.55f
-        const val MAX_ASPECT_RATIO = 1.45f
+        const val MIN_FILL_RATIO = 0.3f
+        const val MIN_ASPECT_RATIO = 0.4f
+        const val MAX_ASPECT_RATIO = 2.0f
         const val MAX_AREA_RATIO = 0.16f
         const val MAX_EDGE_RATIO = 0.42f
-        const val EDGE_MARGIN_RATIO = 0.03f
-        const val EDGE_MARGIN_PX = 3
-        const val EXPAND_RATIO = 0.12f
+        const val EDGE_MARGIN_RATIO = 0.005f
+        const val EDGE_MARGIN_PX = 1
+        const val EXPAND_RATIO = 0.2f
         const val MIN_SATURATION = 0.24f
         const val MIN_VALUE = 0.16f
         const val MERGE_IOU_THRESHOLD = 0.2f
-        const val MERGE_SMALLER_RATIO = 0.55f
+        const val MERGE_SMALLER_RATIO = 0.8f
 
         const val COLOR_NONE = 0
         const val COLOR_RED = 1
         const val COLOR_BLUE = 2
         const val COLOR_YELLOW = 3
+        const val COLOR_GREEN = 4
     }
 }
