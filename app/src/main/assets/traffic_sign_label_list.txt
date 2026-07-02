@@ -122,7 +122,7 @@ class_120
 向左转弯
 class_122
 class_123
-class_124
+向右转弯
 class_125
 直行
 class_127
