@@ -1,5 +1,6 @@
 package com.trafficsign.demo.paddleclas
 
+import android.graphics.Bitmap
 import android.graphics.RectF
 
 enum class InferenceEngine {
@@ -15,7 +16,9 @@ data class DetectionResult(
     val label: String,
     val score: Float,
     val boundingBox: RectF,
-    val boxColor: Int
+    val boxColor: Int,
+    val originalCrop: Bitmap,
+    val hsvOverlayCrop: Bitmap
 )
 
 data class TaskSummary(

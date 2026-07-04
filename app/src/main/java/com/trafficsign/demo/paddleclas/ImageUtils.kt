@@ -2,6 +2,7 @@ package com.trafficsign.demo.paddleclas
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.RectF
@@ -48,6 +49,32 @@ object ImageUtils {
         val right = rectF.right.coerceIn(left + 1f, source.width.toFloat()).roundToInt()
         val bottom = rectF.bottom.coerceIn(top + 1f, source.height.toFloat()).roundToInt()
         return Bitmap.createBitmap(source, left, top, right - left, bottom - top)
+    }
+
+    fun buildHsvOverlayBitmap(source: Bitmap, targetColorId: Int, overlayColor: Int): Bitmap {
+        val width = source.width
+        val height = source.height
+        val pixels = IntArray(width * height)
+        source.getPixels(pixels, 0, width, 0, 0, width, height)
+        val output = IntArray(pixels.size)
+        val overlayAlpha = 176
+
+        for (index in pixels.indices) {
+            val pixel = pixels[index]
+            if (TrafficSignCandidateDetector.classifyColorId(pixel) == targetColorId) {
+                val originalAlpha = Color.alpha(pixel)
+                output[index] = Color.argb(
+                    minOf(originalAlpha, overlayAlpha),
+                    Color.red(overlayColor),
+                    Color.green(overlayColor),
+                    Color.blue(overlayColor)
+                )
+            } else {
+                output[index] = Color.TRANSPARENT
+            }
+        }
+
+        return Bitmap.createBitmap(output, width, height, Bitmap.Config.ARGB_8888)
     }
 
     private fun yuv420888ToNv21(imageProxy: ImageProxy): ByteArray {

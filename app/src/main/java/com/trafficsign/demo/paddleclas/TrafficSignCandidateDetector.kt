@@ -156,6 +156,7 @@ class TrafficSignCandidateDetector {
         return CandidateRegion(
             boundingBox = expandedRect,
             boxColor = colorToOverlay(targetColor),
+            colorId = targetColor,
             area = expandedRect.width() * expandedRect.height()
         )
     }
@@ -175,6 +176,7 @@ class TrafficSignCandidateDetector {
                             max(existing.boundingBox.bottom, candidate.boundingBox.bottom)
                         ),
                         boxColor = if (existing.area >= candidate.area) existing.boxColor else candidate.boxColor,
+                        colorId = if (existing.area >= candidate.area) existing.colorId else candidate.colorId,
                         area = max(existing.area, candidate.area)
                     )
                     wasMerged = true
@@ -189,20 +191,7 @@ class TrafficSignCandidateDetector {
     }
 
     private fun classifyColor(pixel: Int): Int {
-        val hsv = FloatArray(3)
-        Color.colorToHSV(pixel, hsv)
-        val hue = hsv[0]
-        val saturation = hsv[1]
-        val value = hsv[2]
-
-        return when {
-            saturation < MIN_SATURATION || value < MIN_VALUE -> COLOR_NONE
-            hue <= 24f || hue >= 332f -> COLOR_RED
-            hue in 180f..265f -> COLOR_BLUE
-            hue in 28f..82f -> COLOR_YELLOW
-            hue in 88f..165f -> COLOR_GREEN
-            else -> COLOR_NONE
-        }
+        return classifyColorId(pixel)
     }
 
     private fun shouldMerge(first: RectF, second: RectF): Boolean {
@@ -387,10 +376,28 @@ class TrafficSignCandidateDetector {
     data class CandidateRegion(
         val boundingBox: RectF,
         val boxColor: Int,
+        val colorId: Int,
         val area: Float
     )
 
-    private companion object {
+    companion object {
+        fun classifyColorId(pixel: Int): Int {
+            val hsv = FloatArray(3)
+            Color.colorToHSV(pixel, hsv)
+            val hue = hsv[0]
+            val saturation = hsv[1]
+            val value = hsv[2]
+
+            return when {
+                saturation < MIN_SATURATION || value < MIN_VALUE -> COLOR_NONE
+                hue <= 24f || hue >= 332f -> COLOR_RED
+                hue in 180f..265f -> COLOR_BLUE
+                hue in 28f..82f -> COLOR_YELLOW
+                hue in 88f..165f -> COLOR_GREEN
+                else -> COLOR_NONE
+            }
+        }
+
         const val MAX_ANALYSIS_EDGE = 960
         const val MAX_CANDIDATE_COUNT = 32
         const val MIN_COMPONENT_PIXELS_FLOOR = 48

@@ -52,21 +52,49 @@ class TrafficSignRecognizer(
         val detections = mutableListOf<DetectionResult>()
         for (region in regions) {
             val crop = ImageUtils.cropBitmap(bitmap, region.boundingBox)
-            val classification = tfliteRunner.classify(crop)
-            val top1 = classification.topResults.firstOrNull() ?: continue
-            if (!classification.summary.isReady || top1.score < MIN_DETECTION_SCORE) {
-                continue
+            try {
+                val classification = tfliteRunner.classify(crop)
+                val top1 = classification.topResults.firstOrNull() ?: continue
+                if (!classification.summary.isReady || top1.score < MIN_DETECTION_SCORE) {
+                    continue
+                }
+
+                val originalCrop = crop.copy(Bitmap.Config.ARGB_8888, false) ?: continue
+                try {
+                    val hsvOverlayCrop = ImageUtils.buildHsvOverlayBitmap(crop, region.colorId, region.boxColor)
+                    detections += DetectionResult(
+                        label = toDisplayLabel(top1.label),
+                        score = top1.score,
+                        boundingBox = region.boundingBox,
+                        boxColor = region.boxColor,
+                        originalCrop = originalCrop,
+                        hsvOverlayCrop = hsvOverlayCrop
+                    )
+                } catch (exception: Exception) {
+                    if (!originalCrop.isRecycled) {
+                        originalCrop.recycle()
+                    }
+                    throw exception
+                }
+            } finally {
+                crop.recycle()
             }
-            detections += DetectionResult(
-                label = toDisplayLabel(top1.label),
-                score = top1.score,
-                boundingBox = region.boundingBox,
-                boxColor = region.boxColor
-            )
         }
-        return detections
+        val selectedDetections = detections
             .sortedByDescending { it.score }
             .take(MAX_DETECTIONS)
+        detections
+            .asSequence()
+            .filterNot { it in selectedDetections }
+            .forEach { detection ->
+                if (!detection.originalCrop.isRecycled) {
+                    detection.originalCrop.recycle()
+                }
+                if (!detection.hsvOverlayCrop.isRecycled) {
+                    detection.hsvOverlayCrop.recycle()
+                }
+            }
+        return selectedDetections
     }
 
     private interface ClassifierRunner {

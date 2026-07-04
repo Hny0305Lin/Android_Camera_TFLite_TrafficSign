@@ -1,5 +1,6 @@
 package com.trafficsign.demo.paddleclas
 
+import android.graphics.Bitmap
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -14,9 +15,19 @@ class DetectionOverlayView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
+    private val overlayPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        alpha = 210
+    }
+
     private val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 6f
+    }
+
+    private val previewPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.WHITE
     }
 
     private val textBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -33,6 +44,7 @@ class DetectionOverlayView @JvmOverloads constructor(
     private var detections: List<DetectionResult> = emptyList()
 
     fun setDetections(results: List<DetectionResult>, imageWidth: Int, imageHeight: Int) {
+        recycleDetectionBitmaps(detections, except = results)
         detections = results
         sourceWidth = max(1, imageWidth)
         sourceHeight = max(1, imageHeight)
@@ -64,7 +76,10 @@ class DetectionOverlayView @JvmOverloads constructor(
             textBgPaint.color = blendWithBlack(detection.boxColor)
             textPaint.color = if (isBrightColor(detection.boxColor)) Color.BLACK else Color.WHITE
 
+            canvas.drawBitmap(detection.hsvOverlayCrop, null, safeRect, overlayPaint)
             canvas.drawRoundRect(safeRect, 18f, 18f, boxPaint)
+
+            drawOriginalPreview(canvas, safeRect, detection.originalCrop)
 
             val label = "${detection.label} ${(detection.score * 100f).toInt()}%"
             val textWidth = textPaint.measureText(label)
@@ -91,6 +106,64 @@ class DetectionOverlayView @JvmOverloads constructor(
             )
             val baseline = bgTop + 11f - metrics.ascent
             canvas.drawText(label, safeRect.left + 14f, baseline, textPaint)
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        recycleDetectionBitmaps(detections, except = emptyList())
+        detections = emptyList()
+        super.onDetachedFromWindow()
+    }
+
+    private fun drawOriginalPreview(canvas: Canvas, frameRect: RectF, bitmap: Bitmap) {
+        val maxPreviewWidth = min(frameRect.width() * 0.38f, 180f)
+        val maxPreviewHeight = min(frameRect.height() * 0.38f, 140f)
+        if (maxPreviewWidth < 28f || maxPreviewHeight < 28f) {
+            return
+        }
+
+        val previewAspect = bitmap.width / bitmap.height.toFloat()
+        var previewWidth = maxPreviewWidth
+        var previewHeight = previewWidth / previewAspect
+        if (previewHeight > maxPreviewHeight) {
+            previewHeight = maxPreviewHeight
+            previewWidth = previewHeight * previewAspect
+        }
+
+        val margin = 12f
+        val previewRect = RectF(
+            frameRect.right - previewWidth - margin,
+            frameRect.top + margin,
+            frameRect.right - margin,
+            frameRect.top + margin + previewHeight
+        )
+
+        canvas.drawRoundRect(
+            previewRect.left - 4f,
+            previewRect.top - 4f,
+            previewRect.right + 4f,
+            previewRect.bottom + 4f,
+            12f,
+            12f,
+            previewPaint
+        )
+        canvas.drawBitmap(bitmap, null, previewRect, null)
+        canvas.drawRoundRect(previewRect, 10f, 10f, boxPaint)
+    }
+
+    private fun recycleDetectionBitmaps(oldDetections: List<DetectionResult>, except: List<DetectionResult>) {
+        val preserved = mutableSetOf<Bitmap>()
+        except.forEach { detection ->
+            preserved += detection.originalCrop
+            preserved += detection.hsvOverlayCrop
+        }
+        oldDetections.forEach { detection ->
+            if (!preserved.contains(detection.originalCrop) && !detection.originalCrop.isRecycled) {
+                detection.originalCrop.recycle()
+            }
+            if (!preserved.contains(detection.hsvOverlayCrop) && !detection.hsvOverlayCrop.isRecycled) {
+                detection.hsvOverlayCrop.recycle()
+            }
         }
     }
 
